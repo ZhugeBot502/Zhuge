@@ -1,0 +1,33 @@
+import axios from 'axios';
+
+const config = {
+  name: "catgpt",
+  version: "1.0.0",
+  credits: "Minn (Converted by Grim)",
+  description: "Chat with catgpt",
+  usages: "[text]",
+  cooldown: 3,
+};
+
+async function onCall({ message, args }) {
+  const q = args.join(" ");
+  try {
+    const response = await axios.post("https://catgpt.guru/api/chat", {
+      messages: [
+        {
+          role: "user",
+          content: q,
+        },
+      ],
+    });
+    message.reply(response.data);
+  } catch (error) {
+    console.error(error);
+    message.reply('Catgpt didn\'t meow back :(.');
+  }
+};
+
+export default {
+  config,
+  onCall
+}

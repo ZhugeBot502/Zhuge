@@ -1,0 +1,20 @@
+{
+  "files": {
+    "plugins/commands/AI/catgpt.js": [
+      {
+        "id": "efbe0b06-2882-468e-9669-29a3eb2ab4d9",
+        "line": 18,
+        "version": 115,
+        "index": 375
+      }
+    ],
+    "plugins/commands/MEDIA/hmanga.js": [
+      {
+        "id": "82ebac65-406b-4774-a646-414eb091b9ef",
+        "line": 4,
+        "version": 17,
+        "index": 79
+      }
+    ]
+  }
+}

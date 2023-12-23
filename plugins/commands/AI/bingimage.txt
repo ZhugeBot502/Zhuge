@@ -1,0 +1,81 @@
+import axios from "axios";
+import fs from "fs-extra";
+import path from "path";
+
+export const config = {
+  name: "bingimage",
+  version: "1.0",
+  credits: "SiAM | @SiamTheFox (Comverted by Grim)",
+  description: "DALL-E 3 image generator",
+  usage: "[prompt]",
+  cooldown: 5,
+};
+
+export async function onCall({ message, args }) {
+  const { threadID, messageID } = message;
+  const prompt = encodeURIComponent(args.join(" "));
+  if (!prompt) return message.reply("⚠️ | Please provide a prompt!");
+
+  const _U = "1aLEyqZbA5MQ1DaJmo6pXPWQvjcCtignvJEt_HthIHPexseZqEMEQ3J1okB8wWPKOIovvwB8wTFHU2qnGcmCznmosy-3xzj_X2YMP9S0SUxwLi72xAyopKb_Xn3uErmC9xlxTFA-fXNzS3ssbvT73tKDoA5Xz7yanJ2OFwpenZ3fQk809tMn8CvNe8Tkf03zunETQNMIhEAf6_xpyLIqS8Tw8f69a-Akmzpikm2XWzqk"; // _U value here
+  const SRCHHPGUSR = "SRCHLANG=en&IG=4CC41F85799741ADB0904E007D43B5BC&CW=360&CH=664&SCW=360&SCH=664&BRW=MM&BRH=MT&DPR=2.0&UTC=480&DM=1&PV=10.0.0&HV=1697903261&HBOPEN=2&PRVCW=360&PRVCH=664"; // SRCHHPGUSR value here
+
+  const apiURL = `https://dalle-3.siam-apiproject.repl.co/generate`;
+
+  try {
+    const processingMessage = await global.api.sendMessage("⏳ | Your request is being processed...", threadID, messageID);
+
+    const response = await axios.get(apiURL, {
+      params: {
+        prompt: prompt,
+        bing_cookie: encodeURIComponent(_U),
+        auth_cookie_SRCHHPGUSR: encodeURIComponent(SRCHHPGUSR)
+      }
+    });
+
+    const data = response.data;
+
+    if (!data.images || Object.keys(data.images).length === 0) {
+      await global.api.sendMessage("The prompt has been blocked by Bing. Please try again...", threadID, messageID);
+      return;
+    }
+
+    if (data.images) {
+      const imageKeys = Object.keys(data.images);
+      const attachment = [];
+      const imagePaths = []; // Array to store image paths
+
+      for (let i = 0; i < imageKeys.length; i++) {
+        const imgURL = data.images[imageKeys[i]];
+        const pathImg = path.join(
+          global.cachePath,
+          `${Date.now()}_bingimage_${i + 1}_${message.messageID}.jpg`
+        );
+
+        const imageResponse = await axios.get(imgURL, { responseType: 'arraybuffer' });
+        fs.writeFileSync(pathImg, Buffer.from(imageResponse.data, 'binary'));
+        attachment.push(fs.createReadStream(pathImg));
+
+        // Store the path for later use
+        imagePaths.push(pathImg);
+      }
+
+      await message.reply({
+        body: "✨ | Here are the images for your prompt:",
+        attachment: attachment,
+      }, threadID);
+
+      // Now you can loop through imagePaths to unlink the files
+      for (let i = 0; i < imagePaths.length; i++) {
+        fs.unlinkSync(imagePaths[i]);
+      }
+
+      await global.api.unsendMessage(processingMessage.messageID);
+
+    } else {
+      await global.api.sendMessage("API response format is incorrect 🐸", threadID, messageID);
+    }
+  } catch (error) {
+    console.error(error);
+    await global.api.sendMessage("An error occurred while processing your request.", threadID, messageID);
+  }
+};
